@@ -1,42 +1,85 @@
 {% include "header.html" %}
+{% from "bootstrap5/form.html" import render_form %}
 
 <!-- Page Header-->
 <header class="masthead" style="background-image: url('{{post.img_url}}')">
-  <div class="container position-relative px-4 px-lg-5">
-    <div class="row gx-4 gx-lg-5 justify-content-center">
-      <div class="col-md-10 col-lg-8 col-xl-7">
-        <div class="post-heading">
-          <h1>{{ post.title }}</h1>
-          <h2 class="subheading">{{ post.subtitle }}</h2>
-          <span class="meta"
-            >Posted by
-            <a href="#">{{ post.author }}</a>
+    <div class="container position-relative px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="post-heading">
+                    <h1>{{ post.title }}</h1>
+                    <h2 class="subheading">{{ post.subtitle }}</h2>
+                    <span class="meta"
+                    >Posted by
+            <a href="#">{{ post.author.name }}</a>
             on {{ post.date }}
           </span>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </header>
 
 <!-- Post Content -->
 <article>
-  <div class="container px-4 px-lg-5">
-    <div class="row gx-4 gx-lg-5 justify-content-center">
-      <div class="col-md-10 col-lg-8 col-xl-7">
-        {{ post.body|safe }}
+    <div class="container px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                {{ post.body|safe }}
+                <!--Only show Edit Post button if user id is 1 (admin user) -->
+                {% if current_user.id == 1 %}
+                <div class="d-flex justify-content-end mb-4">
+                    <a
+                            class="btn btn-primary float-right"
+                            href="{{url_for('edit_post', post_id=post.id)}}"
+                    >Edit Post</a
+                    >
+                </div>
+                {% endif %}
 
-        <div class="d-flex justify-content-end mb-4">
-          <!-- TODO: Editing posts-->
-          <a
-            class="btn btn-primary float-right"
-            href="{{ url_for('edit_post', post_id=post.id) }}"
-            >Edit Post</a
-          >
+                <!-- Comments Area -->
+                <!-- Load the CKEditor -->
+                {{ ckeditor.load() }}
+                <!-- Configure it with the name of the form field from CommentForm -->
+                {{ ckeditor.config(name='comment_text') }}
+                <!-- Create the wtf quick form from CommentForm -->
+                {{ render_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+                <!-- Comments Area -->
+                <div class="col-lg-8 col-md-10 mx-auto comment">
+                    <ul class="commentList">
+                        <div class="comments-section">
+                            {% if post.comments|length > 0 %}
+                            {% for comment in post.comments %}
+                            <div class="d-flex align-items-start mb-2">
+                                <div class="commenterImage">
+                                    <img src="{{ comment.comment_author.email | gravatar }}"/>
+                                </div>
+                                <div class="commentText flex-grow-1">
+                                    {{ comment.text|safe }}
+                                    <span class="sub-text">{{ comment.comment_author.name }}</span>
+
+                                    <!-- Show delete option only if comment belongs to logged-in user -->
+                                    {% if current_user.is_authenticated and current_user.id == comment.comment_author.id
+                                    %}
+                                    <a href="{{ url_for('delete_comment', comment_id=comment.id, post_id=post.id) }}"
+                                       class="btn btn-sm ms-2 float-end"
+                                       onclick="return confirm('Delete this comment?');">
+                                        🗑️
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted" style="font-size: 0.9rem;">No comments yet — be the first one to comment!</p>
+                            {% endif %}
+                        </div>
+                    </ul>
+                </div>
+
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </article>
 
 {% include "footer.html" %}
